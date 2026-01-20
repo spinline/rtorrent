@@ -32,6 +32,53 @@ You need to cross-compile all dependencies for the MIPS big-endian target:
 - **openssl** (if using SSL)
 - **xmlrpc-c** (if using XMLRPC support)
 
+#### Recommended: Using Entware
+
+**Entware** is a software repository for embedded devices that provides pre-compiled packages for MIPS and other architectures. This is the easiest way to get dependencies.
+
+**Option A: Use Entware on Target Device**
+
+If you have access to your MIPS device:
+
+1. Install Entware on your MIPS device following: https://github.com/Entware/Entware/wiki
+2. Install dependencies on the device:
+   ```bash
+   opkg update
+   opkg install libtorrent libcurl openssl-util ncurses
+   ```
+3. Copy the Entware root directory to your build machine:
+   ```bash
+   scp -r root@mips-device:/opt /path/to/mips-sysroot/
+   ```
+4. Build rtorrent with the Entware sysroot:
+   ```bash
+   export MIPS_SYSROOT=/path/to/mips-sysroot
+   ./scripts/build-mips-bigendian.sh
+   ```
+
+**Option B: Extract Entware Packages**
+
+Download and extract Entware packages directly:
+
+```bash
+# Create sysroot directory
+mkdir -p /tmp/mips-sysroot
+
+# Download Entware packages for MIPS
+# Visit https://bin.entware.net/mipselsf-k3.4/
+# Download required .ipk files (libtorrent, libcurl, openssl, ncurses, zlib)
+
+# Extract packages to sysroot
+for pkg in *.ipk; do
+    ar x $pkg
+    tar -xzf data.tar.gz -C /tmp/mips-sysroot
+done
+
+# Build with sysroot
+export MIPS_SYSROOT=/tmp/mips-sysroot
+./scripts/build-mips-bigendian.sh
+```
+
 ## Quick Start
 
 Use the provided build script:
@@ -117,7 +164,93 @@ export MIPS_PREFIX=/custom/install/path
 ./scripts/build-mips-bigendian.sh
 ```
 
-## Building Dependencies
+## Using Entware for Dependencies (Recommended)
+
+**Entware** is a software repository for embedded devices that provides pre-compiled packages for various architectures including MIPS. This is the **easiest and recommended** way to obtain all required dependencies.
+
+### Method 1: Direct Entware Integration
+
+If you have a MIPS device with Entware installed:
+
+```bash
+# On your MIPS device
+opkg update
+opkg install libtorrent curl openssl-util ncurses zlib
+
+# On your build machine, copy the Entware installation
+scp -r root@mips-device:/opt/lib /tmp/mips-sysroot/
+scp -r root@mips-device:/opt/include /tmp/mips-sysroot/
+
+# Build rtorrent
+export MIPS_SYSROOT=/tmp/mips-sysroot
+export PKG_CONFIG_PATH=/tmp/mips-sysroot/lib/pkgconfig
+./scripts/build-mips-bigendian.sh
+```
+
+### Method 2: Extract Entware Packages
+
+Download and extract Entware packages without a MIPS device:
+
+```bash
+# Create sysroot directory
+mkdir -p /tmp/mips-entware/{opt,usr}
+
+# Determine your architecture
+# MIPS big-endian: mipselsf-k3.4 or mipssf-k3.4
+# Visit: https://bin.entware.net/
+
+# Download required packages (example for MIPS big-endian)
+cd /tmp/mips-entware
+ARCH=mipssf-k3.4  # or mipselsf-k3.4 for little-endian
+BASE_URL=https://bin.entware.net/${ARCH}/
+
+wget ${BASE_URL}/libtorrent_0.13.8-1_${ARCH}.ipk
+wget ${BASE_URL}/libcurl_8.5.0-1_${ARCH}.ipk
+wget ${BASE_URL}/libopenssl_3.0.12-1_${ARCH}.ipk
+wget ${BASE_URL}/libncurses_6.4-2_${ARCH}.ipk
+wget ${BASE_URL}/zlib_1.3-1_${ARCH}.ipk
+
+# Extract all packages
+for pkg in *.ipk; do
+    echo "Extracting $pkg..."
+    ar x $pkg
+    tar -xzf data.tar.gz -C /tmp/mips-entware
+    rm -f control.tar.gz data.tar.gz debian-binary
+done
+
+# Set up environment and build
+export MIPS_SYSROOT=/tmp/mips-entware/opt
+export PKG_CONFIG_PATH=/tmp/mips-entware/opt/lib/pkgconfig
+export CPPFLAGS="-I/tmp/mips-entware/opt/include"
+export LDFLAGS="-L/tmp/mips-entware/opt/lib"
+
+./scripts/build-mips-bigendian.sh
+```
+
+### Method 3: Use Buildroot with Entware Feeds
+
+For automated dependency building:
+
+```bash
+# Clone buildroot
+git clone https://github.com/buildroot/buildroot.git
+cd buildroot
+
+# Configure for MIPS big-endian
+make menuconfig
+# Select: Target Architecture -> MIPS (big endian)
+# Select packages: libtorrent, libcurl, ncurses, openssl
+
+# Build
+make
+
+# Use the staging directory as sysroot
+export MIPS_SYSROOT=$(pwd)/output/staging
+cd /path/to/rtorrent
+./scripts/build-mips-bigendian.sh
+```
+
+## Building Dependencies Manually
 
 ### Building libtorrent for MIPS
 
@@ -193,9 +326,18 @@ Ensure libtorrent is compiled for MIPS and installed in a location where pkg-con
 export PKG_CONFIG_PATH=/opt/mips/lib/pkgconfig:$PKG_CONFIG_PATH
 ```
 
+**Recommended solution:** Use Entware packages (see "Using Entware for Dependencies" section above) to avoid manually building all dependencies.
+
 ### "configure: error: requires either NcursesW or Ncurses library"
 
-Build ncurses for MIPS target first (see above).
+Build ncurses for MIPS target first (see above), or use Entware:
+
+```bash
+# Extract ncurses from Entware package
+wget https://bin.entware.net/mipssf-k3.4/libncurses_<version>_mipssf-k3.4.ipk
+ar x libncurses_*.ipk && tar -xzf data.tar.gz -C /tmp/mips-sysroot
+export PKG_CONFIG_PATH=/tmp/mips-sysroot/opt/lib/pkgconfig:$PKG_CONFIG_PATH
+```
 
 ### Runtime: "cannot execute binary file"
 
@@ -218,6 +360,8 @@ Note: "MSB" means Most Significant Byte first (big-endian).
 
 ## Additional Resources
 
+- [Entware](https://github.com/Entware/Entware) - **Recommended** software repository for embedded devices with pre-built MIPS packages
+- [Entware Package Repository](https://bin.entware.net/) - Download pre-compiled packages for MIPS
 - [GNU Autotools Cross-Compilation Guide](https://www.gnu.org/software/automake/manual/html_node/Cross_002dCompilation.html)
 - [Buildroot](https://buildroot.org/) - Tool for building complete embedded Linux systems
 - [OpenWrt](https://openwrt.org/) - Linux distribution for embedded devices (includes MIPS support)
