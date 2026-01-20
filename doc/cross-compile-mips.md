@@ -258,14 +258,21 @@ cd /path/to/rtorrent
 
 Build rtorrent and all dependencies using Entware's build system. This method provides full control and ensures all components are built with compatible settings.
 
-**Note:** Entware SDK requires Python 2.7, which is not available in Ubuntu 22.04+. Use Ubuntu 20.04 or earlier, or use Methods 1-3 instead.
+**Requirements:** 
+- Ubuntu 20.04 or earlier (requires both Python 2.7 AND Python 3.7+)
+- **NOT compatible with Ubuntu 22.04+** (Python 2.7 unavailable)
+- Alternative: Use Docker with Ubuntu 20.04 image (see below)
 
 **Reference:** [Entware - Compile packages from sources](https://github.com/Entware/Entware/wiki/Compile-packages-from-sources)
 
+#### Option A: Ubuntu 20.04 Native
+
 ```bash
-# 1. Install prerequisites on build machine (Ubuntu 20.04 or earlier)
+# 1. Install prerequisites on Ubuntu 20.04
 sudo apt-get update
-sudo apt-get install build-essential git curl wget python2.7
+sudo apt-get install build-essential git curl wget \
+    python2.7 python3 python3-distutils \
+    rsync unzip gawk file libncurses5-dev zlib1g-dev
 
 # 2. Clone Entware build system
 git clone https://github.com/Entware/Entware.git
@@ -342,6 +349,33 @@ find bin/ -name "rtorrent*.ipk"
 # 8. Install on MIPS device
 # Copy the .ipk file to your MIPS device and install:
 # opkg install rtorrent_*.ipk
+```
+
+#### Option B: Using Docker (Ubuntu 24.04 or newer)
+
+If you're on Ubuntu 22.04+ without Python 2.7, use Docker with Ubuntu 20.04:
+
+```bash
+# Build rtorrent using Entware SDK in Docker container
+docker run -it --rm -v $(pwd):/workspace ubuntu:20.04 bash -c "
+    apt-get update && \
+    apt-get install -y build-essential git curl wget \
+        python2.7 python3 python3-distutils \
+        rsync unzip gawk file libncurses5-dev zlib1g-dev && \
+    
+    cd /workspace && \
+    git clone https://github.com/Entware/Entware.git && \
+    cd Entware && \
+    cp configs/mips-3.4.config .config && \
+    make package/symlinks && \
+    make tools/install -j\$(nproc) && \
+    make toolchain/install -j\$(nproc) && \
+    
+    # Create and build rtorrent package
+    # (Follow steps 5-7 from Option A above)
+    
+    echo 'Build complete! Check Entware/bin/ for .ipk packages'
+"
 ```
 
 **Advantages of this method:**
