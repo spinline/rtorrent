@@ -68,23 +68,23 @@ export RANLIB="${TOOLCHAIN_PREFIX}-ranlib"
 export STRIP="${TOOLCHAIN_PREFIX}-strip"
 
 # Build configure flags
-CONFIGURE_FLAGS="--host=${TOOLCHAIN_PREFIX}"
-CONFIGURE_FLAGS="${CONFIGURE_FLAGS} --prefix=${PREFIX}"
+CONFIGURE_FLAGS=("--host=${TOOLCHAIN_PREFIX}")
+CONFIGURE_FLAGS+=("--prefix=${PREFIX}")
 
 if [ -n "$SYSROOT" ]; then
-    CONFIGURE_FLAGS="${CONFIGURE_FLAGS} --with-sysroot=${SYSROOT}"
+    CONFIGURE_FLAGS+=("--with-sysroot=${SYSROOT}")
     export PKG_CONFIG_SYSROOT_DIR="${SYSROOT}"
     export PKG_CONFIG_PATH="${SYSROOT}/usr/lib/pkgconfig:${SYSROOT}/usr/share/pkgconfig"
 fi
 
 # Add any additional flags passed to the script
-CONFIGURE_FLAGS="${CONFIGURE_FLAGS} $@"
+CONFIGURE_FLAGS+=("$@")
 
 echo -e "${GREEN}Running configure...${NC}"
-echo "  ./configure ${CONFIGURE_FLAGS}"
+echo "  ./configure ${CONFIGURE_FLAGS[*]}"
 echo ""
 
-./configure ${CONFIGURE_FLAGS}
+./configure "${CONFIGURE_FLAGS[@]}"
 
 echo ""
 echo -e "${GREEN}Running make...${NC}"
