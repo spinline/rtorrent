@@ -81,7 +81,11 @@ export MIPS_SYSROOT=/tmp/mips-sysroot
 
 ## Quick Start
 
-Use the provided build script:
+**Recommended:** Use Entware for the easiest setup. Choose one of these approaches:
+
+1. **Use Entware SDK** (Full build from source - see "Method 4" below)
+2. **Extract Entware packages** (Pre-compiled - see "Method 2" below)
+3. **Use provided build script** (Requires manual dependency setup):
 
 ```bash
 ./scripts/build-mips-bigendian.sh
@@ -246,6 +250,123 @@ make
 
 # Use the staging directory as sysroot
 export MIPS_SYSROOT=$(pwd)/output/staging
+cd /path/to/rtorrent
+./scripts/build-mips-bigendian.sh
+```
+
+### Method 4: Build from Source Using Entware SDK
+
+Build rtorrent and all dependencies using Entware's build system. This method provides full control and ensures all components are built with compatible settings.
+
+**Reference:** [Entware - Compile packages from sources](https://github.com/Entware/Entware/wiki/Compile-packages-from-sources)
+
+```bash
+# 1. Install prerequisites on build machine
+sudo apt-get update
+sudo apt-get install build-essential git curl wget
+
+# 2. Clone Entware build system
+git clone https://github.com/Entware/Entware.git
+cd Entware
+
+# 3. Configure for MIPS big-endian
+make package/symlinks
+make menuconfig
+
+# In menuconfig:
+# - Target System -> MIPS (big endian)
+# - Select your specific MIPS CPU if needed
+# - Save and exit
+
+# 4. Build the toolchain (first time only - takes a while)
+make tools/install -j$(nproc)
+make toolchain/install -j$(nproc)
+
+# 5. Create rtorrent package definition
+mkdir -p package/feeds/packages/rtorrent
+cat > package/feeds/packages/rtorrent/Makefile << 'EOF'
+include $(TOPDIR)/rules.mk
+
+PKG_NAME:=rtorrent
+PKG_VERSION:=0.16.6
+PKG_RELEASE:=1
+
+PKG_SOURCE_PROTO:=git
+PKG_SOURCE_URL:=https://github.com/rakshasa/rtorrent.git
+PKG_SOURCE_VERSION:=v$(PKG_VERSION)
+
+PKG_LICENSE:=GPL-2.0
+PKG_LICENSE_FILES:=COPYING
+
+PKG_INSTALL:=1
+PKG_BUILD_PARALLEL:=1
+
+include $(INCLUDE_DIR)/package.mk
+
+define Package/rtorrent
+  SECTION:=net
+  CATEGORY:=Network
+  TITLE:=BitTorrent client for ncurses
+  URL:=https://github.com/rakshasa/rtorrent
+  DEPENDS:=+libtorrent +libcurl +libncursesw +libopenssl +libstdcpp
+endef
+
+define Package/rtorrent/description
+  rTorrent is a text-based ncurses BitTorrent client written in C++.
+endef
+
+define Build/Configure
+	cd $(PKG_BUILD_DIR) && ./autogen.sh
+	$(call Build/Configure/Default,\
+		--with-xmlrpc-c \
+	)
+endef
+
+define Package/rtorrent/install
+	$(INSTALL_DIR) $(1)/opt/bin
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/opt/bin/rtorrent $(1)/opt/bin/
+endef
+
+$(eval $(call BuildPackage,rtorrent))
+EOF
+
+# 6. Build rtorrent and dependencies
+make package/libtorrent/compile -j$(nproc)
+make package/rtorrent/compile -j$(nproc)
+
+# 7. Find the compiled package
+find bin/ -name "rtorrent*.ipk"
+
+# 8. Install on MIPS device
+# Copy the .ipk file to your MIPS device and install:
+# opkg install rtorrent_*.ipk
+```
+
+**Advantages of this method:**
+- Complete build environment with all dependencies
+- Consistent toolchain and library versions
+- Easy to customize build options
+- Generates installable .ipk package
+- Can rebuild with patches or custom configurations
+
+**Building only dependencies:**
+
+If you just want to use Entware SDK to build dependencies for use with the build script:
+
+```bash
+# After setting up Entware SDK (steps 1-4 above)
+
+# Build dependencies
+make package/libtorrent/compile -j$(nproc)
+make package/curl/compile -j$(nproc)
+make package/openssl/compile -j$(nproc)
+make package/ncurses/compile -j$(nproc)
+
+# Use the staging directory as sysroot
+export MIPS_SYSROOT=$(pwd)/staging_dir/target-mips_*
+export PATH=$(pwd)/staging_dir/toolchain-mips_*/bin:$PATH
+export MIPS_TOOLCHAIN_PREFIX=mips-openwrt-linux
+
 cd /path/to/rtorrent
 ./scripts/build-mips-bigendian.sh
 ```
