@@ -258,12 +258,14 @@ cd /path/to/rtorrent
 
 Build rtorrent and all dependencies using Entware's build system. This method provides full control and ensures all components are built with compatible settings.
 
+**Note:** Entware SDK requires Python 2.7, which is not available in Ubuntu 22.04+. Use Ubuntu 20.04 or earlier, or use Methods 1-3 instead.
+
 **Reference:** [Entware - Compile packages from sources](https://github.com/Entware/Entware/wiki/Compile-packages-from-sources)
 
 ```bash
-# 1. Install prerequisites on build machine
+# 1. Install prerequisites on build machine (Ubuntu 20.04 or earlier)
 sudo apt-get update
-sudo apt-get install build-essential git curl wget
+sudo apt-get install build-essential git curl wget python2.7
 
 # 2. Clone Entware build system
 git clone https://github.com/Entware/Entware.git
