@@ -142,9 +142,10 @@ sudo make install
 ### Building libcurl for MIPS
 
 ```bash
-wget https://curl.se/download/curl-7.88.0.tar.gz
-tar xzf curl-7.88.0.tar.gz
-cd curl-7.88.0
+# Download the latest stable version from https://curl.se/download/
+wget https://curl.se/download/curl-<VERSION>.tar.gz
+tar xzf curl-<VERSION>.tar.gz
+cd curl-<VERSION>
 
 ./configure \
     --host=mips-linux-gnu \
@@ -158,9 +159,10 @@ sudo make install
 ### Building ncurses for MIPS
 
 ```bash
-wget https://ftp.gnu.org/gnu/ncurses/ncurses-6.4.tar.gz
-tar xzf ncurses-6.4.tar.gz
-cd ncurses-6.4
+# Download the latest version from https://ftp.gnu.org/gnu/ncurses/
+wget https://ftp.gnu.org/gnu/ncurses/ncurses-<VERSION>.tar.gz
+tar xzf ncurses-<VERSION>.tar.gz
+cd ncurses-<VERSION>
 
 ./configure \
     --host=mips-linux-gnu \
