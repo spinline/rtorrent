@@ -59,6 +59,18 @@ Man pages output to "doc/rtorrent.1".
 
 RTorrent follows the development of [libtorrent](https://github.com/rakshasa/libtorrent) closely, and thus the versions must be in sync.
 
+## CROSS-COMPILATION
+
+RTorrent supports cross-compilation for various architectures including MIPS big-endian processors.
+
+For MIPS big-endian cross-compilation:
+
+```
+./scripts/build-mips-bigendian.sh
+```
+
+See [doc/cross-compile-mips.md](doc/cross-compile-mips.md) for detailed cross-compilation instructions.
+
 ## USAGE
 
 Refer to User Guide: https://github.com/rakshasa/rtorrent/wiki/User-Guide
